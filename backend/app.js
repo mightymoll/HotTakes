@@ -1,15 +1,21 @@
-const dotenv = require("dotenv");
-dotenv.config();
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
-const userRoutes = require('./routes/user');
+const cors = require('cors')
+require("dotenv/config");
+
+const userRoutes = require('./routes/userRoute');
+const sauceRoutes = require('./routes/sauceRoute');
+const path = require('path');
 
 // conenct app with Express
-app.use(express.json());
+app.use(express.json({ extented: false }));
+app.use(cors());
 
 // Express routes
 app.use('/api/auth', userRoutes);
+app.use('/api/sauces', sauceRoutes);
+app.use('/images', express.static(path.join(__dirname, 'images')))
 
 // connect to mongo DB with databaseURL from .env file
 mongoose.connect(process.env.databaseURL,
@@ -19,14 +25,5 @@ mongoose.connect(process.env.databaseURL,
   })
   .then(() => console.log('Sucess! Connexion à MongoDB réussie !'))
   .catch((error) => console.log('Fail! Connexion à MongoDB échouée !' + error));
-
-// set headers for CORS
-userRoutes.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.status(200).send('OK')
-  next();
-});
 
 module.exports = app;
