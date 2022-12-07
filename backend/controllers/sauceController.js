@@ -1,6 +1,5 @@
 const Sauce = require('../models/sauceModel');
 const fs = require('fs');
-const auth = require('../middleware/authToken');
 
 exports.getAllSauces = (req, res, next) => {
   Sauce.find()
@@ -44,7 +43,7 @@ exports.getOneSauce = (req, res, next) => {
 
 exports.modifySauce = (req, res, next) => {
   const sauceObject = req.file ? {
-    ...JSON.parse(req.body.thing),
+    ...JSON.parse(req.body.sauce),
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   } : { ...req.body };
 
@@ -69,3 +68,21 @@ exports.modifySauce = (req, res, next) => {
       res.status(400).json({ error: error });
     })
 };
+
+exports.deleteSauce = (req, res, next) => {
+  Sauce.findOne({ _id: req.params.id })
+    .then(sauce => {
+      if (sauce.userId != req.auth.userId) {
+        res.status(401).json({ message: 'Not authorized' })
+      } else {
+        const filename = sauce.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, () => {
+          Sauce.deleteOne({ _id: req.params.id })
+            .then(() => { res.status(200).json({ message: 'Object deleted' }) })
+        });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error });
+    });
+}
