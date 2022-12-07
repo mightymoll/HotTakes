@@ -11,6 +11,7 @@ const sauceController = require('../controllers/sauceController');
 //Functions
 router.get('/', auth, sauceController.getAllSauces);
 router.post('/', auth, multer, sauceController.createSauce);
-/*router.get('/:id', auth, sauceController.getOneSauce);*/
+router.get('/:id', auth, sauceController.getOneSauce);
+router.put('/:id', auth, multer, sauceController.modifySauce);
 
 module.exports = router;
