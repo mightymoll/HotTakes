@@ -47,6 +47,10 @@ exports.modifySauce = (req, res, next) => {
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   } : { ...req.body };
 
+  if (req.file.filename) {
+    fs.unlink(`images/${req.file.filename}`)
+  }
+
   delete sauceObject._userId;
   Sauce.findOne({ _id: req.params.id })
     .then((sauce) => {
@@ -91,12 +95,19 @@ exports.likeSauce = (req, res, next) => {
   const thisUser = req.body.userId
   const thisSauce = req.params.id
   const sauceLikeStatus = req.body.like
+  const alreadyLiked = thisSauce.usersLiked.includes(thisUser)
+  const alreadyDisliked = thisSauce.usersDisliked.includes(thisUser)
 
   switch (sauceLikeStatus) {
     case -1: {
-      Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $inc: { dislikes: 1 } })
-        .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
-        .catch(error => res.status(400).json({ error: error }))
+      if (!alreadyLiked || !alreadyDisliked) {
+        Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $inc: { dislikes: 1 } })
+          .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
+          .catch(error => res.status(400).json({ error: error }))
+      }
+      else {
+        res.status(400).json({ error: 'user already voted on this sauce' })
+      }
       break;
     }
     case 0: {
@@ -121,41 +132,16 @@ exports.likeSauce = (req, res, next) => {
       break;
     }
     case 1: {
-      Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $inc: { likes: 1 } })
-        .then(() => res.status(200).json({ message: 'Sauce likes +1' }))
-        .catch(error => res.status(400).json({ error: error }))
+      if (!alreadyLiked || !alreadyDisliked) {
+        Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $inc: { likes: 1 } })
+          .then(() => res.status(200).json({ message: 'Sauce likes +1' }))
+          .catch(error => res.status(400).json({ error: error }))
+      }
+      else {
+        res.status(400).json({ error: 'user already voted on this sauce' })
+      }
+      break;
     }
   }
 }
 
-/*
-
-      if (like === -1 && !alreadyVoted) {
-        Sauce.updateOne({ _id: req.params.id }, { $push: { usersDisliked: req.auth.userId }, $inc: { dislikes: +1 } })
-          .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
-          .catch(error => res.status(400).json({ error: error }))
-      }
-      if (alreadyVoted) {
-        res.status(405).json({ message: 'not authorized, user already voted on this sauce' })
-      }
-      if (like === 0 && alreadyVoted) {
-        Sauce.findOne({ _id: req.params.id })
-          .then(sauce => {
-            if (sauce.usersLiked.includes(req.auth.userId)) {
-              Sauce.updateOne({ _id: req.params.id }, { $pull: { usersLiked: req.auth.userId }, $inc: { likes: -1 } })
-                .then(() => res.status(200).json({ message: `Sauce 'like' has been removed` }))
-                .catch(error => res.status(400).json({ error: error }))
-            }
-            if (sauce.usersDisliked.includes(req.auth.userId)) {
-              Sauce.updateOne({ _id: req.params.id }, { $pull: { usersDisliked: req.auth.userId }, $inc: { dislikes: -1 } })
-                .then(() => res.status(200).json({ message: `Sauce 'dislike' has been removed` }))
-                .catch(error => res.status(400).json({ error: error }))
-            }
-          })
-          .catch(error => {
-            res.status(404).json({ error: error })
-          })
-      }
-
-    })
-}*/
