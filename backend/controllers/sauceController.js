@@ -101,53 +101,57 @@ exports.likeSauce = (req, res, next) => {
   const thisUser = req.body.userId
   const thisSauce = req.params.id
   const sauceLikeStatus = req.body.like
-  const alreadyLiked = thisSauce.usersLiked.includes(thisUser)
-  const alreadyDisliked = thisSauce.usersDisliked.includes(thisUser)
 
-  switch (sauceLikeStatus) {
-    case -1: {
-      if (!alreadyLiked || !alreadyDisliked) {
-        Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $inc: { dislikes: 1 } })
-          .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
-          .catch(error => res.status(400).json({ error: error }))
-      }
-      else {
-        res.status(400).json({ error: 'user already voted on this sauce' })
-      }
-      break;
-    }
-    case 0: {
-      Sauce.findOne({ _id: thisSauce })
-        .then(sauce => {
-          if (sauce.usersLiked.includes(thisUser)) {
-            Sauce.updateOne({ _id: thisSauce },
-              { $pull: { usersLiked: thisUser } },
-              { $inc: { likes: -1 }, })
-              .then(() => res.status(200).json({ message: `Sauce 'like' has been removed` }))
+  Sauce.findOne({ _id: thisSauce })
+    .then(sauce => {
+      const alreadyLiked = sauce.usersLiked.includes(thisUser)
+      const alreadyDisliked = sauce.usersDisliked.includes(thisUser)
+      switch (sauceLikeStatus) {
+        case -1: {
+          if (!alreadyLiked || !alreadyDisliked) {
+            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $inc: { dislikes: 1 } })
+              .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
               .catch(error => res.status(400).json({ error: error }))
           }
-          if (sauce.usersDisliked.includes(thisUser)) {
-            Sauce.updateOne({ _id: thisSauce },
-              { $pull: { usersDisliked: thisUser } },
-              { $inc: { dislikes: -1 }, })
-              .then(() => res.status(200).json({ message: `Sauce 'dislike' has been removed` }))
+          else {
+            res.status(400).json({ error: 'user already voted on this sauce' })
+          }
+          break;
+        }
+        case 0: {
+          Sauce.findOne({ _id: thisSauce })
+            .then(sauce => {
+              if (sauce.usersLiked.includes(thisUser)) {
+                Sauce.updateOne({ _id: thisSauce },
+                  { $pull: { usersLiked: thisUser } },
+                  { $inc: { likes: -1 }, })
+                  .then(() => res.status(200).json({ message: `Sauce 'like' has been removed` }))
+                  .catch(error => res.status(400).json({ error: error }))
+              }
+              if (sauce.usersDisliked.includes(thisUser)) {
+                Sauce.updateOne({ _id: thisSauce },
+                  { $pull: { usersDisliked: thisUser } },
+                  { $inc: { dislikes: -1 }, })
+                  .then(() => res.status(200).json({ message: `Sauce 'dislike' has been removed` }))
+                  .catch(error => res.status(400).json({ error: error }))
+              }
+            })
+            .catch(error => res.status(404).json({ error: error }))
+          break;
+        }
+        case 1: {
+          if (!alreadyLiked || !alreadyDisliked) {
+            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $inc: { likes: 1 } })
+              .then(() => res.status(200).json({ message: 'Sauce likes +1' }))
               .catch(error => res.status(400).json({ error: error }))
           }
-        })
-        .catch(error => res.status(404).json({ error: error }))
-      break;
-    }
-    case 1: {
-      if (!alreadyLiked || !alreadyDisliked) {
-        Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $inc: { likes: 1 } })
-          .then(() => res.status(200).json({ message: 'Sauce likes +1' }))
-          .catch(error => res.status(400).json({ error: error }))
+          else {
+            res.status(400).json({ error: 'user already voted on this sauce' })
+          }
+          break;
+        }
       }
-      else {
-        res.status(400).json({ error: 'user already voted on this sauce' })
-      }
-      break;
-    }
-  }
+    })
 }
+
 
