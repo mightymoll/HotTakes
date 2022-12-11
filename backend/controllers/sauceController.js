@@ -104,12 +104,17 @@ exports.likeSauce = (req, res, next) => {
 
   Sauce.findOne({ _id: thisSauce })
     .then(sauce => {
-      const alreadyLiked = sauce.usersLiked.includes(thisUser)
-      const alreadyDisliked = sauce.usersDisliked.includes(thisUser)
+      const likedArray = sauce.usersLiked
+      const dislikedArray = sauce.usersDisliked
+      const alreadyLiked = likedArray.includes(thisUser)
+      const alreadyDisliked = dislikedArray.includes(thisUser)
+      const likeCount = likedArray.length
+      const dislikeCount = dislikedArray.length
+
       switch (sauceLikeStatus) {
         case -1: {
           if (!alreadyLiked || !alreadyDisliked) {
-            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $inc: { dislikes: 1 } })
+            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersDisliked: thisUser }, $set: { dislikes: dislikeCount } })
               .then(() => res.status(200).json({ message: 'Sauce dislikes +1' }))
               .catch(error => res.status(400).json({ error: error }))
           }
@@ -141,7 +146,7 @@ exports.likeSauce = (req, res, next) => {
         }
         case 1: {
           if (!alreadyLiked || !alreadyDisliked) {
-            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $inc: { likes: 1 } })
+            Sauce.updateOne({ _id: thisSauce }, { $addToSet: { usersLiked: thisUser }, $set: { likes: likeCount } })
               .then(() => res.status(200).json({ message: 'Sauce likes +1' }))
               .catch(error => res.status(400).json({ error: error }))
           }
