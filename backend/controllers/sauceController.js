@@ -42,35 +42,41 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.modifySauce = (req, res, next) => {
-  const sauceObject = req.file ? {
-    ...JSON.parse(req.body.sauce),
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-  } : { ...req.body };
-
-  if (req.file.filename) {
-    fs.unlink(`images/${req.file.filename}`)
+  if (req.body.file) {
+    Sauce.findOne({ _id: req.params.id })
+      .then((sauce) => {
+        const imageExisting = sauce.imageUrl.split('/images/')[1];
+        const filepath = path.resolve(`images/${imageExisting}`)
+        fs.unlink(filepath);
+        console.log('existing image removed from storage')
+      })
+      .catch(error => {
+        res.status(400).json({ error: error });
+      })
   }
-
-  delete sauceObject._userId;
-  Sauce.findOne({ _id: req.params.id })
-    .then((sauce) => {
-      if (sauce.userId != req.auth.userId) {
-        res.status(401).json({ message: 'Not authorized' })
-      }
-      else {
+  else {
+    const sauceObject = req.file ? {
+      ...JSON.parse(req.body.sauce),
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+    } : { ...req.body };
+    delete sauceObject._userId;
+    Sauce.findOne({ _id: req.params.id })
+      .then((sauce) => {
+        if (sauce.userId != req.auth.userId) {
+          res.status(401).json({ message: 'Not authorized' })
+        }
         Sauce.updateOne({ _id: req.params.id },
           {
             ...sauceObject,
             _id: req.params.id
           })
           .then(() => res.status(200).json({ message: 'Sauce successfully modified' }))
-          .catch(error =>
-            res.status(401).json({ error: error }))
-      }
-    })
-    .catch(error => {
-      res.status(400).json({ error: error });
-    })
+          .catch(() => res.status(401).json({ error: error }))
+      })
+      .catch(error => {
+        res.status(400).json({ error: error });
+      })
+  }
 };
 
 exports.deleteSauce = (req, res, next) => {
