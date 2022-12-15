@@ -13,16 +13,16 @@ exports.getAllSauces = (req, res, next) => {
 
 exports.createSauce = (req, res, next) => {
   const sauceObject = JSON.parse(req.body.sauce);
-  delete sauceObject._id
-  delete sauceObject._userId;
+  delete sauceObject.userId;
+  delete sauceObject.imageUrl;
   const sauce = new Sauce({
     ...sauceObject,
     userId: req.auth.userId,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   })
   sauce.save()
-    .then(res => {
-      res.status(201).json({ message: 'sauce successfully uploaded to database' })
+    .then(sauce => {
+      res.status(201).json(sauce)
     })
     .catch(error => {
       res.status(400).json({ error: error })
